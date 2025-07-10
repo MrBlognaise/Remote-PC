@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Contrôle PC</title>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 2em; }
+    input, button { font-size: 1em; padding: 0.5em; margin: 0.5em; }
+    #panel { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Connexion</h1>
+  <input type="password" id="pwd" placeholder="Mot de passe" />
+  <button onclick="login()">Entrer</button>
+
+  <div id="panel">
+    <div id="status">Chargement...</div>
+    <button onclick="toggle()">ON/OFF</button>
+  </div>
+
+  <script>
+    let password = "";
+
+    async function login() {
+      password = document.getElementById("pwd").value;
+      const ok = await updateStatus();
+      if (ok) {
+        document.querySelector("h1").style.display = "none";
+        document.getElementById("pwd").style.display = "none";
+        document.getElementById("panel").style.display = "block";
+      } else {
+        alert("Mot de passe incorrect ou ESP32 inaccessible.");
+      }
+    }
+
+    async function updateStatus() {
+      try {
+        const res = await fetch("http://ADRESSE_ESP32/status", {
+          headers: { "Authorization": password }
+        });
+        if (!res.ok) return false;
+        const data = await res.json();
+        document.getElementById("status").innerText = data.on ? "PC allumé" : "PC éteint";
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function toggle() {
+      const res = await fetch("http://ADRESSE_ESP32/status", {
+        headers: { "Authorization": password }
+      });
+      const data = await res.json();
+      await fetch(`http://ADRESSE_ESP32/${data.on ? "off" : "on"}`, {
+        method: "POST",
+        headers: { "Authorization": password }
+      });
+      await updateStatus();
+    }
+  </script>
+</body>
+</html>
